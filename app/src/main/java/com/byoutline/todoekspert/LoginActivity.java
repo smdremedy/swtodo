@@ -7,10 +7,22 @@ import android.support.v7.app.AppCompatActivity;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.Toast;
+
+import java.io.IOException;
+import java.lang.annotation.Annotation;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import okhttp3.OkHttpClient;
+import okhttp3.ResponseBody;
+import okhttp3.logging.HttpLoggingInterceptor;
+import retrofit2.Call;
+import retrofit2.Converter;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -65,8 +77,7 @@ public class LoginActivity extends AppCompatActivity {
 
     }
 
-    class LoginTask extends AsyncTask<String, Integer, Boolean> {
-
+    class LoginTask extends AsyncTask<String, Integer, ErrorResponse> {
 
 
         @Override
@@ -76,32 +87,67 @@ public class LoginActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onPostExecute(Boolean result) {
+        protected void onPostExecute(ErrorResponse result) {
             super.onPostExecute(result);
             loginButton.setEnabled(true);
             loginButton.setText("" + result);
 
-            if(result) {
+            if (result == null) {
                 startActivity(new Intent(LoginActivity.this, TodoListActivity.class));
                 finish();
+            } else {
+                Toast.makeText(LoginActivity.this, result.error, Toast.LENGTH_SHORT).show();
             }
 
         }
 
         @Override
-        protected Boolean doInBackground(String... params) {
-            try {
-                for (int i = 0; i < 100; i++) {
+        protected ErrorResponse doInBackground(String... params) {
 
-                    Thread.sleep(100);
-                    publishProgress(i);
+
+            HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
+            interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+
+            OkHttpClient client = new OkHttpClient.Builder()
+                    .addNetworkInterceptor(interceptor)
+                    .build();
+
+            Retrofit.Builder builder = new Retrofit.Builder();
+            builder.baseUrl("https://api.parse.com");
+            builder.client(client);
+            builder.addConverterFactory(GsonConverterFactory.create());
+
+            Retrofit retrofit = builder.build();
+
+            Api api = retrofit.create(Api.class);
+
+            Call<LoginResponse> call = api.getLogin(params[0], params[1]);
+
+            try {
+                Response<LoginResponse> response = call.execute();
+
+                if (response.isSuccessful()) {
+                    LoginResponse loginResponse = response.body();
+                } else {
+                    ResponseBody errorBody = response.errorBody();
+
+                    Converter<ResponseBody, ErrorResponse> converter
+                            = retrofit.responseBodyConverter(ErrorResponse.class,
+                            new Annotation[]{});
+
+                    ErrorResponse errorResponse =
+                            converter.convert(errorBody);
+
+                    return errorResponse;
+
                 }
-            } catch (InterruptedException e) {
+
+            } catch (IOException e) {
                 e.printStackTrace();
             }
-            boolean result = "test".equals(params[0]) && "test".equals(params[1]);
 
-            return result;
+
+            return null;
         }
 
         @Override
