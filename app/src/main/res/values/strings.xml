@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name" translatable="false">TodoEkspert</string>
+    <string name="login">Login</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="username_not_empty">Username can\'t be empty!</string>
+    <string name="password_not_empty">Password can\'t be empty!</string>
+    <string name="what_needs_to_be_done">What needs to be done?</string>
+    <string name="done">Done</string>
+    <string name="add_todo">Add Todo</string>
+</resources>
