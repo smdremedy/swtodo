@@ -9,4 +9,9 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.byoutline.todoekspert.TodoListActivity">
 
+    <ListView
+        android:id="@+id/todosListView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+
 </RelativeLayout>

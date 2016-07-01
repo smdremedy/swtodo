@@ -1,7 +1,6 @@
 package com.byoutline.todoekspert;
 
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Button;
@@ -9,20 +8,11 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import java.io.IOException;
-import java.lang.annotation.Annotation;
+import com.byoutline.todoekspert.api.ErrorResponse;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
-import okhttp3.OkHttpClient;
-import okhttp3.ResponseBody;
-import okhttp3.logging.HttpLoggingInterceptor;
-import retrofit2.Call;
-import retrofit2.Converter;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -36,15 +26,30 @@ public class LoginActivity extends AppCompatActivity {
     @BindView(R.id.progress)
     ProgressBar progress;
 
+    LoginPresenter loginPresenter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         ButterKnife.bind(this);
 
+        loginPresenter = ((App)getApplication()).getLoginPresenter();
+
 
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        loginPresenter.setLoginActivity(this);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        loginPresenter.setLoginActivity(null);
+    }
 
     @OnClick(R.id.loginButton)
     public void onClick() {
@@ -66,96 +71,22 @@ public class LoginActivity extends AppCompatActivity {
         if (!hasError) {
             //login
 
-
-            LoginTask loginTask = new LoginTask();
-            loginTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
-                    username, password);
+            loginPresenter.login(username, password);
 
 
         }
-
-
     }
 
-    class LoginTask extends AsyncTask<String, Integer, ErrorResponse> {
+    public void showProgress(boolean show) {
+        loginButton.setEnabled(!show);
+    }
 
+    public void loginOk() {
+        startActivity(new Intent(LoginActivity.this, TodoListActivity.class));
+        finish();
+    }
 
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            loginButton.setEnabled(false);
-        }
-
-        @Override
-        protected void onPostExecute(ErrorResponse result) {
-            super.onPostExecute(result);
-            loginButton.setEnabled(true);
-            loginButton.setText("" + result);
-
-            if (result == null) {
-                startActivity(new Intent(LoginActivity.this, TodoListActivity.class));
-                finish();
-            } else {
-                Toast.makeText(LoginActivity.this, result.error, Toast.LENGTH_SHORT).show();
-            }
-
-        }
-
-        @Override
-        protected ErrorResponse doInBackground(String... params) {
-
-
-            HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-            interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-
-            OkHttpClient client = new OkHttpClient.Builder()
-                    .addNetworkInterceptor(interceptor)
-                    .build();
-
-            Retrofit.Builder builder = new Retrofit.Builder();
-            builder.baseUrl("https://api.parse.com");
-            builder.client(client);
-            builder.addConverterFactory(GsonConverterFactory.create());
-
-            Retrofit retrofit = builder.build();
-
-            Api api = retrofit.create(Api.class);
-
-            Call<LoginResponse> call = api.getLogin(params[0], params[1]);
-
-            try {
-                Response<LoginResponse> response = call.execute();
-
-                if (response.isSuccessful()) {
-                    LoginResponse loginResponse = response.body();
-                } else {
-                    ResponseBody errorBody = response.errorBody();
-
-                    Converter<ResponseBody, ErrorResponse> converter
-                            = retrofit.responseBodyConverter(ErrorResponse.class,
-                            new Annotation[]{});
-
-                    ErrorResponse errorResponse =
-                            converter.convert(errorBody);
-
-                    return errorResponse;
-
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-
-            return null;
-        }
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            super.onProgressUpdate(values);
-            progress.setProgress(values[0]);
-        }
-
-
+    public void showError(ErrorResponse result) {
+        Toast.makeText(LoginActivity.this, result.error, Toast.LENGTH_SHORT).show();
     }
 }

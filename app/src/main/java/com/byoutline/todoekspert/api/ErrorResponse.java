@@ -1,4 +1,4 @@
-package com.byoutline.todoekspert;
+package com.byoutline.todoekspert.api;
 
 public class ErrorResponse {
     public int code;
