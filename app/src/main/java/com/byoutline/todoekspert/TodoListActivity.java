@@ -1,8 +1,11 @@
 package com.byoutline.todoekspert;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
@@ -17,20 +20,25 @@ import android.widget.BaseAdapter;
 import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
 import android.widget.Toast;
 
 import com.byoutline.todoekspert.api.Api;
 import com.byoutline.todoekspert.api.TodoFromApi;
-import com.byoutline.todoekspert.api.TodosResponse;
+import com.byoutline.todoekspert.db.DbHelper;
+import com.byoutline.todoekspert.db.TodoDao;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+
+import static timber.log.Timber.d;
 
 public class TodoListActivity extends AppCompatActivity {
 
@@ -40,7 +48,44 @@ public class TodoListActivity extends AppCompatActivity {
     ListView todosListView;
 
     private LoginPresenter loginPresenter;
-    private NewTodoAdapter arrayAdapter;
+    //private NewTodoAdapter arrayAdapter;
+
+    private SimpleCursorAdapter cursorAdapter;
+    private TodoDao dao;
+
+    private String[] from = new String[]{TodoDao.C_CONTENT, TodoDao.C_DONE};
+    private int[] to = new int[]{R.id.itemCheckBox, R.id.itemCheckBox};
+    private Api api;
+
+
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            refresh();
+        }
+
+
+    };
+
+    private void refresh() {
+        d("Refresh in activity");
+
+        Cursor cursor = dao.getTodos(loginPresenter.getUserId());
+        cursorAdapter.swapCursor(cursor);
+
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        registerReceiver(receiver, new IntentFilter(RefreshIntentService.ACTION));
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unregisterReceiver(receiver);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,12 +99,36 @@ public class TodoListActivity extends AppCompatActivity {
             return;
         }
 
-
         setContentView(R.layout.activity_todo_list);
         ButterKnife.bind(this);
+        //arrayAdapter = new NewTodoAdapter();
+        dao = new TodoDao(new DbHelper(getApplicationContext()));
+        api = ((App) getApplication()).getApi();
+        Cursor cursor = dao.getTodos(loginPresenter.getUserId());
+        cursorAdapter = new SimpleCursorAdapter(this, R.layout.item_todo, cursor,
+                from, to, 0);
 
-        arrayAdapter = new NewTodoAdapter();
-        todosListView.setAdapter(arrayAdapter);
+
+        SimpleCursorAdapter.ViewBinder viewBinder = new SimpleCursorAdapter.ViewBinder() {
+            @Override
+            public boolean setViewValue(View view, Cursor cursor, int columnIndex) {
+
+                if (cursor.getColumnIndex(TodoDao.C_DONE) == columnIndex) {
+                    CheckBox checkBox = (CheckBox) view;
+
+                    int value = cursor.getInt(columnIndex);
+
+                    checkBox.setChecked(value > 0);
+                    return true;
+                }
+
+                return false;
+            }
+        };
+
+        cursorAdapter.setViewBinder(viewBinder);
+
+        todosListView.setAdapter(cursorAdapter);
 
 
     }
@@ -84,10 +153,9 @@ public class TodoListActivity extends AppCompatActivity {
             return 0;
         }
 
-     
+
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-
 
 
             Log.d("TAG", "Pos:" + position + " cv:" + convertView);
@@ -139,7 +207,6 @@ public class TodoListActivity extends AppCompatActivity {
             }
         }
     }
-
 
 
     class TodoAdapter extends ArrayAdapter<TodoFromApi> {
@@ -215,29 +282,38 @@ public class TodoListActivity extends AppCompatActivity {
                 return true;
             case R.id.action_refresh:
 
+                startService(new Intent(this, RefreshIntentService.class));
 
-                Api api = ((App) getApplication()).getApi();
-                Call<TodosResponse> call = api.getTodos(loginPresenter.getToken());
-                call.enqueue(new Callback<TodosResponse>() {
-                    @Override
-                    public void onResponse(Call<TodosResponse> call, Response<TodosResponse> response) {
-                        if (response.isSuccessful()) {
-                            TodosResponse todosResponse = response.body();
 
-                            arrayAdapter.addAll(todosResponse.results);
-
-                            for (TodoFromApi todo : todosResponse.results) {
-                                Log.d("TAG", todo.toString());
-                            }
-
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Call<TodosResponse> call, Throwable t) {
-
-                    }
-                });
+//                Call<TodosResponse> call = api.getTodos(loginPresenter.getToken());
+//                call.enqueue(new Callback<TodosResponse>() {
+//                    @Override
+//                    public void onResponse(Call<TodosResponse> call, Response<TodosResponse> response) {
+//                        if (response.isSuccessful()) {
+//                            TodosResponse todosResponse = response.body();
+//
+//                            //arrayAdapter.addAll(todosResponse.results);
+//
+//
+//
+//                            for (TodoFromApi todo : todosResponse.results) {
+//                                Log.d("TAG", todo.toString());
+//
+//                                dao.create(todo);
+//
+//                            }
+//
+//                            Cursor cursor = dao.getTodos(loginPresenter.getUserId());
+//                            cursorAdapter.swapCursor(cursor);
+//
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void onFailure(Call<TodosResponse> call, Throwable t) {
+//
+//                    }
+//                });
 
 
                 return true;
@@ -259,6 +335,25 @@ public class TodoListActivity extends AppCompatActivity {
             Toast.makeText(TodoListActivity.this,
                     "Result:" + resultCode + todo,
                     Toast.LENGTH_SHORT).show();
+
+            TodoFromApi todoFromApi = new TodoFromApi();
+            todoFromApi.done = todo.done;
+            todoFromApi.content = todo.task;
+
+            Call<ResponseBody> responseBodyCall = api.postTodo(todoFromApi,
+                    loginPresenter.getToken());
+
+            responseBodyCall.enqueue(new Callback<ResponseBody>() {
+                @Override
+                public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+
+                }
+
+                @Override
+                public void onFailure(Call<ResponseBody> call, Throwable t) {
+
+                }
+            });
 
 
         }

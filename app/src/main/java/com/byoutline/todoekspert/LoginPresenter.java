@@ -64,6 +64,10 @@ public class LoginPresenter {
         return sharedPreferences.getString(SESSION_TOKEN,"");
     }
 
+    public String getUserId() {
+        return sharedPreferences.getString(USER_ID, "");
+    }
+
 
     class LoginTask extends AsyncTask<String, Integer, ErrorResponse> {
 

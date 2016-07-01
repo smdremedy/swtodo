@@ -7,6 +7,7 @@ public class TodoFromApi {
     public String createdAt;
     public String updatedAt;
     public String objectId;
+    public String userId;
 
 
     @Override

@@ -4,6 +4,8 @@ import android.app.Application;
 import android.preference.PreferenceManager;
 
 import com.byoutline.todoekspert.api.Api;
+import com.facebook.stetho.Stetho;
+import com.facebook.stetho.okhttp3.StethoInterceptor;
 import com.squareup.leakcanary.LeakCanary;
 
 import java.io.IOException;
@@ -15,6 +17,7 @@ import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import timber.log.Timber;
 
 public class App extends Application {
 
@@ -40,7 +43,11 @@ public class App extends Application {
         super.onCreate();
 
         LeakCanary.install(this);
+        Stetho.initializeWithDefaults(this);
 
+        if(BuildConfig.DEBUG) {
+            Timber.plant(new Timber.DebugTree());
+        }
 
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -61,6 +68,7 @@ public class App extends Application {
                     }
                 })
                 .addNetworkInterceptor(interceptor)
+                .addNetworkInterceptor(new StethoInterceptor())
 
                 .build();
 
