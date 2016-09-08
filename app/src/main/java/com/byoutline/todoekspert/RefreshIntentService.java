@@ -29,8 +29,8 @@ public class RefreshIntentService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
 
-        Api api = ((App) getApplication()).getApi();
-        LoginPresenter loginPresenter = ((App) getApplication()).getLoginPresenter();
+        Api api = App.sComponent.getApi();
+        LoginPresenter loginPresenter = App.sComponent.getLoginPreseneter();
 
         TodoDao dao = new TodoDao(new DbHelper(getApplicationContext()));
 

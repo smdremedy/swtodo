@@ -31,6 +31,8 @@ import com.byoutline.todoekspert.db.TodoDao;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import okhttp3.ResponseBody;
@@ -47,15 +49,19 @@ public class TodoListActivity extends AppCompatActivity {
     @BindView(R.id.todosListView)
     ListView todosListView;
 
-    private LoginPresenter loginPresenter;
-    //private NewTodoAdapter arrayAdapter;
-
     private SimpleCursorAdapter cursorAdapter;
-    private TodoDao dao;
 
     private String[] from = new String[]{TodoDao.C_CONTENT, TodoDao.C_DONE};
+
     private int[] to = new int[]{R.id.itemCheckBox, R.id.itemCheckBox};
-    private Api api;
+
+    //private NewTodoAdapter arrayAdapter;
+    @Inject
+    LoginPresenter loginPresenter;
+    @Inject
+    TodoDao dao;
+    @Inject
+    Api api;
 
 
     private BroadcastReceiver receiver = new BroadcastReceiver() {
@@ -91,8 +97,7 @@ public class TodoListActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-
-        loginPresenter = ((App) getApplication()).getLoginPresenter();
+        App.sComponent.inject(this);
 
         if (loginPresenter.hasToLogin()) {
             goToLogin();
@@ -102,8 +107,6 @@ public class TodoListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_todo_list);
         ButterKnife.bind(this);
         //arrayAdapter = new NewTodoAdapter();
-        dao = new TodoDao(new DbHelper(getApplicationContext()));
-        api = ((App) getApplication()).getApi();
         Cursor cursor = dao.getTodos(loginPresenter.getUserId());
         cursorAdapter = new SimpleCursorAdapter(this, R.layout.item_todo, cursor,
                 from, to, 0);

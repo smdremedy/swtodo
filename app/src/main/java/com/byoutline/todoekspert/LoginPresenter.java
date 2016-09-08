@@ -10,6 +10,8 @@ import com.byoutline.todoekspert.api.LoginResponse;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 
+import javax.inject.Inject;
+
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Converter;
@@ -29,6 +31,7 @@ public class LoginPresenter {
     private final Retrofit retrofit;
 
 
+    @Inject
     public LoginPresenter(SharedPreferences sharedPreferences, Api api, Retrofit retrofit) {
 
         this.sharedPreferences = sharedPreferences;

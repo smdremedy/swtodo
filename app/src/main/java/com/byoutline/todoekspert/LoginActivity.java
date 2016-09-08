@@ -8,7 +8,10 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.byoutline.todoekspert.api.Api;
 import com.byoutline.todoekspert.api.ErrorResponse;
+
+import javax.inject.Inject;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -26,6 +29,7 @@ public class LoginActivity extends AppCompatActivity {
     @BindView(R.id.progress)
     ProgressBar progress;
 
+    @Inject
     LoginPresenter loginPresenter;
 
     @Override
@@ -33,9 +37,7 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         ButterKnife.bind(this);
-
-        loginPresenter = ((App)getApplication()).getLoginPresenter();
-
+        App.sComponent.inject(this);
 
     }
 

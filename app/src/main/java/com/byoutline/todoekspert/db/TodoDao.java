@@ -6,6 +6,8 @@ import android.database.sqlite.SQLiteDatabase;
 
 import com.byoutline.todoekspert.api.TodoFromApi;
 
+import javax.inject.Inject;
+
 public class TodoDao {
 
     public static final String C_ID = "_id";
@@ -22,6 +24,7 @@ public class TodoDao {
     private final DbHelper dbHelper;
 
 
+    @Inject
     public TodoDao(DbHelper dbHelper) {
 
         this.dbHelper = dbHelper;
