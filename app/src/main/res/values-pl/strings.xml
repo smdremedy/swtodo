@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="login">Zaloguj</string>
+    <string name="add_todo">Dodaj zadanie</string>
+    <string name="done">Zrobione</string>
+    <string name="password">Haslo</string>
+    <string name="password_not_empty">Haslo nie moze byc puste</string>
+    <string name="username">Nazwa</string>
+    <string name="username_not_empty">Nazwa nie moze byc pusta</string>
+    <string name="what_needs_to_be_done">Co do zrobineia</string>
 </resources>
